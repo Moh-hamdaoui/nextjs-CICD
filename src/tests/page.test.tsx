@@ -1,9 +1,10 @@
+import React from "react";
 import { render, screen, fireEvent } from "@testing-library/react";
 import Page from "../app/page";
 import "@testing-library/jest-dom";
 
 test("Affiche et ajoute une tâche", async () => {
-  render(<Page />);
+  render(<Page/>);
 
   const input = screen.getByPlaceholderText("Ajouter une tâche...");
   expect(input).toBeInTheDocument();
