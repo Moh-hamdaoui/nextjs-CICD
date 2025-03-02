@@ -16,17 +16,17 @@ jobs:
       - name: Ajouter la clé SSH privée et configurer SSH
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/eemi-project-ansible
+          chmod 600 ~/.ssh/eemi-project-ansible
           ssh-keyscan -H 13.60.29.47 >> ~/.ssh/known_hosts  
 
       - name: Vérifier la connexion SSH
-        run: ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ubuntu@13.60.29.47 "echo 'Connexion SSH réussie'"
+        run: ssh -i ~/.ssh/eemi-project-ansible -o StrictHostKeyChecking=no ubuntu@13.60.29.47 "echo 'Connexion SSH réussie'"
 
       - name: Exécuter Ansible Playbook
         uses: dawidd6/action-ansible-playbook@v2
         with:
-          playbook: ansible/playbook.yml
+          playbook: ansible-project/deploy.yml
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           inventory: |
             [webserver]
