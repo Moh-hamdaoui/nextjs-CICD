@@ -53,7 +53,7 @@ export default function Page() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 p-6">
-      <h1 className="text-2xl font-bold mb-4">To-Do List</h1>
+      <h1 className="text-2xl font-bold mb-4">To Do List</h1>
       <div className="flex mb-4">
         <input
           type="text"
