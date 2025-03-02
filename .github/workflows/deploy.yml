@@ -3,7 +3,7 @@ name: Deploy Next.js App
 on:
   push:
     branches:
-      - main
+      - main 
 
 jobs:
   deploy:
@@ -16,20 +16,45 @@ jobs:
       - name: Ajouter la clé SSH privée et configurer SSH
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/eemi-project-ansible
-          chmod 600 ~/.ssh/eemi-project-ansible
-          ssh-keyscan -H 13.60.29.47 >> ~/.ssh/known_hosts  
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H 13.60.29.47 >> ~/.ssh/known_hosts 
 
       - name: Vérifier la connexion SSH
-        run: ssh -i ~/.ssh/eemi-project-ansible -o StrictHostKeyChecking=no ubuntu@13.60.29.47 "echo 'Connexion SSH réussie'"
+        run: ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ubuntu@13.60.29.47 "echo 'Connexion SSH réussie'"
 
-      - name: Exécuter Ansible Playbook
-        uses: dawidd6/action-ansible-playbook@v2
-        with:
-          playbook: ansible/playbook.yml
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          inventory: |
-            [webserver]
-            13.60.29.47 ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/eemi-project-ansible
+      - name: Déployer sur le serveur
+        run: |
+          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ubuntu@13.60.29.47 << 'EOF'
+          set -e  # Arrêter le script en cas d'erreur
 
-          options: "-u ubuntu"
+          # Définir les variables
+          APP_DIR="/home/ubuntu/nextjs-CICD"
+          REPO_URL="https://github.com/Moh-hamdaoui/nextjs-CICD.git"
+
+          # Mettre à jour le système et installer Node.js + PM2
+          sudo apt update && sudo apt upgrade -y
+          curl -fsSL https://deb.nodesource.com/setup_22.x | sudo bash -
+          sudo apt-get install -y nodejs
+          sudo npm install -g pm2
+
+          # Vérifier si le projet existe
+          if [ ! -d "$APP_DIR/.git" ]; then
+            git clone $REPO_URL $APP_DIR
+          fi
+
+          # Aller dans le dossier du projet et mettre à jour
+          cd $APP_DIR
+          git reset --hard
+          git pull origin main
+
+          # Installer les dépendances et générer Prisma Client
+          npm install
+          npx prisma generate
+          npx prisma migrate dev --name init
+          npm run build
+
+          # Démarrer l'application avec PM2
+          pm2 restart next-app || pm2 start node_modules/next/dist/bin/next --name "next-app" -- start
+          pm2 save
+          EOF
